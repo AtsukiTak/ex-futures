@@ -8,17 +8,22 @@ future_pubsub
 A tokio future based publish-subscribe channel.
 
 For now, this crate provides
-- unsync unbounded channel
+- unsync unbounded publish subscribe channel
+- unsync unbounded cloneable stream
 
 
-And does not provide
-- unsync bounded channel
-- sync unbounded channel
-- sync bounded channel
+And will provide in future
+- unsync bounded publish subscribe channel
+- sync unbounded publish subscribe channel
+- sync bounded publish subscribe channel
+- unsync bounded cloneable stream
+- sync unbounded cloneable stream
+- sync bounded cloneable stream
 
 
 
 ## How to use
+### Publish-Subscribe channel
 An usage is almost same with `futures::unsync::mpsc::unbounded`.
 
 
@@ -35,4 +40,21 @@ fn main() {
 
     assert_eq!(rx.next().unwrap().map(|i| *i), Ok(1));
     assert_eq!(rx2.next().unwrap().map(|i| *i), Ok(1));
+}
+```
+
+
+### Cloneable stream
+
+```rust
+use future_pubsub::unsync::into_cloneable;
+
+fn main() {
+    let stream = gen_inc_stream();;
+
+    let cloneable = into_cloneable(stream);
+    let cloneable2 = cloneable.clone();
+
+    assert_eq!(cloneable.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);
+    assert_eq!(cloneable2.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);
 }

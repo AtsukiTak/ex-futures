@@ -1,3 +1,4 @@
+//! provides many kind of feature being usable only in a single thread.
 mod unbounded;
 mod clone;
 

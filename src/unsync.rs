@@ -17,9 +17,6 @@ use std::fmt;
 /// Returns unbounded sender and receiver.
 /// This function is like another hand of `futures::unsync::mpsc::unbounded` but
 /// every item being treated need to implement `Clone` trait.
-///
-/// When you send item to `UnboundedSender`, it is cloned and then shared between
-/// `UnboundedReceiver`s.
 pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
     const FIRST_RECEIVER_ID: usize = 0;
 
@@ -45,12 +42,14 @@ pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
 
 
 struct Shared<T> {
-    receive_queues: HashMap<ReceiverId, VecDeque<T>>,
+    receive_queues: HashMap<ReceiverId, VecDeque<Rc<T>>>,
     blocked_receivers: Vec<Task>,
     sender_alive: bool,
 }
 
 
+/// The transmission end of an unbounded channel.
+/// This is created by the `unbounded` function.
 pub struct UnboundedSender<T> {
     shared: Weak<RefCell<Shared<T>>>,
 }
@@ -58,6 +57,10 @@ pub struct UnboundedSender<T> {
 
 type ReceiverId = usize;
 
+/// The receiving end of an unbounded channel.
+/// This is created by the `unbounded` function.
+///
+/// This receiver is not stream of `T` but `Rc<T>`.
 pub struct UnboundedReceiver<T> {
     id: ReceiverId,
     shared: Rc<RefCell<Shared<T>>>,
@@ -65,7 +68,7 @@ pub struct UnboundedReceiver<T> {
 
 
 
-impl<T: Clone> Sink for UnboundedSender<T> {
+impl<T> Sink for UnboundedSender<T> {
     type SinkItem = T;
     type SinkError = SendError<T>;
 
@@ -92,7 +95,7 @@ impl<T: Clone> Sink for UnboundedSender<T> {
 
 
 
-impl<T: Clone> UnboundedSender<T> {
+impl<T> UnboundedSender<T> {
     fn do_send(&self, msg: T) -> StartSend<T, SendError<T>> {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -101,8 +104,9 @@ impl<T: Clone> UnboundedSender<T> {
         let mut shared = shared.borrow_mut();
 
         // Send msg to each queue
+        let rc = Rc::new(msg);
         for queue in shared.receive_queues.values_mut() {
-            queue.push_back(msg.clone());
+            queue.push_back(rc.clone());
         }
 
         // Notify that new msg is ready
@@ -123,10 +127,10 @@ impl<T: Clone> UnboundedSender<T> {
 
 
 impl<T> Stream for UnboundedReceiver<T> {
-    type Item = T;
+    type Item = Rc<T>;
     type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<T>, ()> {
+    fn poll(&mut self) -> Poll<Option<Rc<T>>, ()> {
         let mut shared = self.shared.borrow_mut();
 
         let msg = shared.receive_queues.get_mut(&self.id).unwrap().pop_front();

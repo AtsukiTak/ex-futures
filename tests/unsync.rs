@@ -10,6 +10,8 @@ use futures::future::ok;
 
 use tokio_core::reactor::Core;
 
+use std::ops::Deref;
+
 
 
 #[test]
@@ -19,7 +21,7 @@ fn send_recv() {
 
     tx.send(1).wait().unwrap();
 
-    assert_eq!(rx.next().unwrap(), Ok(1));
+    assert_eq!(rx.next().unwrap().unwrap().deref(), &1);
 }
 
 
@@ -33,8 +35,8 @@ fn send_recv_shared() {
 
     tx.send(1).wait().unwrap();
 
-    assert_eq!(rx.next().unwrap(), Ok(1));
-    assert_eq!(rx2.next().unwrap(), Ok(1));
+    assert_eq!(rx.next().unwrap().unwrap().deref(), &1);
+    assert_eq!(rx2.next().unwrap().unwrap().deref(), &1);
 }
 
 
@@ -48,7 +50,7 @@ fn send_many_items() {
     let future = tx.send_all(stream).map(|_| ()).map_err(|_| ());
     core.handle().spawn(future);
 
-    assert_eq!(core.run(rx.collect()).unwrap(), [0, 1, 2, 3]);
+    assert_eq!(core.run(rx.map(|i| *i).collect()).unwrap(), [0, 1, 2, 3]);
 }
 
 
@@ -64,7 +66,7 @@ fn send_many_items_recv_shared() {
     let future = tx.send_all(stream).map(|_| ()).map_err(|_| ());
     core.handle().spawn(future);
 
-    assert_eq!(core.run(rx.collect()).unwrap(), [0, 1, 2, 3]);
-    assert_eq!(core.run(rx2.collect()).unwrap(), [0, 1, 2, 3]);
-    assert_eq!(core.run(rx3.collect()).unwrap(), [0, 1, 2, 3]);
+    assert_eq!(core.run(rx.map(|i| *i).collect()).unwrap(), [0, 1, 2, 3]);
+    assert_eq!(core.run(rx2.map(|i| *i).collect()).unwrap(), [0, 1, 2, 3]);
+    assert_eq!(core.run(rx3.map(|i| *i).collect()).unwrap(), [0, 1, 2, 3]);
 }

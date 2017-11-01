@@ -21,8 +21,6 @@ And does not provide
 ## How to use
 An usage is almost same with `futures::unsync::mpsc::unbounded`.
 
-***CAUTION : Every item being passed in need to implement `Clone` trait***
-
 
 ```rust
 use future_pubsub::unsync::unbounded;

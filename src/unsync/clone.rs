@@ -34,6 +34,9 @@ struct Shared<S: Stream> {
 }
 
 
+/// A cloneable stream being created by `into_cloneable` function.
+/// You can `clone` this stream as you want.
+/// Each cloned stream is also cloneable.
 pub struct Cloneable<S: Stream> {
     id: ReceiverId,
     shared: Rc<RefCell<Shared<S>>>,
@@ -103,6 +106,14 @@ impl<S: Stream> Clone for Cloneable<S> {
         shared.receive_queues.insert(id, VecDeque::new());
 
         cloned
+    }
+}
+
+
+impl<S: Stream> Drop for Cloneable<S> {
+    fn drop(&mut self) {
+        let mut shared = self.shared.borrow_mut();
+        shared.receive_queues.remove(&self.id);
     }
 }
 

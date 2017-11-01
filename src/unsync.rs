@@ -8,6 +8,9 @@ use rand::{Rng, OsRng};
 use std::collections::{VecDeque, HashMap};
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
+use std::any::Any;
+use std::error::Error;
+use std::fmt;
 
 
 
@@ -61,9 +64,6 @@ pub struct UnboundedReceiver<T> {
 }
 
 
-#[derive(Debug)]
-pub struct SendError<T>(T);
-
 
 impl<T: Clone> Sink for UnboundedSender<T> {
     type SinkItem = T;
@@ -89,6 +89,7 @@ impl<T: Clone> Sink for UnboundedSender<T> {
         Ok(Async::Ready(()))
     }
 }
+
 
 
 impl<T: Clone> UnboundedSender<T> {
@@ -120,6 +121,7 @@ impl<T: Clone> UnboundedSender<T> {
 
 
 
+
 impl<T> Stream for UnboundedReceiver<T> {
     type Item = T;
     type Error = ();
@@ -144,6 +146,7 @@ impl<T> Stream for UnboundedReceiver<T> {
 }
 
 
+
 impl<T> Drop for UnboundedSender<T> {
     fn drop(&mut self) {
         let shared = match self.shared.upgrade() {
@@ -161,6 +164,7 @@ impl<T> Drop for UnboundedSender<T> {
         }
     }
 }
+
 
 
 impl<T> Clone for UnboundedReceiver<T> {
@@ -187,9 +191,42 @@ impl<T> Clone for UnboundedReceiver<T> {
 }
 
 
+
 impl<T> Drop for UnboundedReceiver<T> {
     fn drop(&mut self) {
         let mut shared = self.shared.borrow_mut();
         shared.receive_queues.remove(&self.id);
     }
 }
+
+
+
+// {{{ SendError
+pub struct SendError<T>(T);
+
+
+impl<T> fmt::Debug for SendError<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_tuple("SendError").field(&"...").finish()
+    }
+}
+
+impl<T> fmt::Display for SendError<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "send failed because receiver is gone")
+    }
+}
+
+impl<T: Any> Error for SendError<T> {
+    fn description(&self) -> &str {
+        "send failed because receiver is gone"
+    }
+}
+
+impl<T> SendError<T> {
+    /// Returns the message that was attempted to be sent but failed.
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+// }}}

@@ -1,13 +1,13 @@
-future_pubsub
+futures_ext
 ===
 
 ![MIT licensed](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Apache-2.0 licensed](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-[![Crates.io](https://img.shields.io/crates/v/future_pubsub.svg)](https://crates.io/crates/future_pubsub)
+[![Crates.io](https://img.shields.io/crates/v/futures_ext.svg)](https://crates.io/crates/futures_ext)
 
-A tokio future based publish-subscribe channel.
+An extension of `futures`.
 
-[Document](https://docs.rs/future_pubsub)
+[Document](https://docs.rs/futures_ext)
 
 For now, this crate provides
 - unsync unbounded publish subscribe channel
@@ -30,7 +30,7 @@ An usage is almost same with `futures::unsync::mpsc::unbounded`.
 
 
 ```rust
-use future_pubsub::unsync::unbounded;
+use futures_ext::unsync::pubsub::unbounded;
 
 fn main() {
     let (tx, rx) = unbounded::<usize>();
@@ -49,12 +49,12 @@ fn main() {
 ### Cloneable stream
 
 ```rust
-use future_pubsub::unsync::into_cloneable;
+use futures_ext::StreamExt;
 
 fn main() {
     let stream = gen_inc_stream();;
 
-    let cloneable = into_cloneable(stream);
+    let cloneable = stream.unsync_cloneable();
     let cloneable2 = cloneable.clone();
 
     assert_eq!(cloneable.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);

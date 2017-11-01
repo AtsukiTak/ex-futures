@@ -33,6 +33,6 @@ fn main() {
 
     tx.send(1).wait().unwrap();
 
-    assert_eq!(rx.next().unwrap(), Ok(1));
-    assert_eq!(rx2.next().unwrap(), Ok(1));
+    assert_eq!(rx.next().unwrap().map(|i| *i), Ok(1));
+    assert_eq!(rx2.next().unwrap().map(|i| *i), Ok(1));
 }

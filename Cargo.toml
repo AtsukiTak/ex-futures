@@ -1,6 +1,6 @@
 [package]
 name = "future_pubsub"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["AtsukiTak <takatomgoo@gmail.com>"]
 license = "MIT/Apache-2.0"
 description = "A tokio based publish-subscibe channel"

@@ -11,8 +11,12 @@ use std::cell::RefCell;
 
 
 
-
-
+/// Returns unbounded sender and receiver.
+/// This function is like another hand of `futures::unsync::mpsc::unbounded` but
+/// every item being treated need to implement `Clone` trait.
+///
+/// When you send item to `UnboundedSender`, it is cloned and then shared between
+/// `UnboundedReceiver`s.
 pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
     const FIRST_RECEIVER_ID: usize = 0;
 
@@ -26,6 +30,7 @@ pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
     }));
 
     let sender = UnboundedSender { shared: Rc::downgrade(&shared) };
+
     let receiver = UnboundedReceiver {
         id: FIRST_RECEIVER_ID,
         shared: shared,
@@ -65,6 +70,29 @@ impl<T: Clone> Sink for UnboundedSender<T> {
     type SinkError = SendError<T>;
 
     fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
+        self.do_send(msg)
+    }
+
+
+    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
+        Ok(Async::Ready(()))
+    }
+
+
+    fn close(&mut self) -> Poll<(), SendError<T>> {
+        let shared = match self.shared.upgrade() {
+            Some(shared) => shared,
+            None => return Ok(Async::Ready(())), // No Receiver is available.
+        };
+        let mut shared = shared.borrow_mut();
+        shared.sender_alive = false;
+        Ok(Async::Ready(()))
+    }
+}
+
+
+impl<T: Clone> UnboundedSender<T> {
+    fn do_send(&self, msg: T) -> StartSend<T, SendError<T>> {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
             None => return Err(SendError(msg)), // No Receiver is available.
@@ -85,20 +113,8 @@ impl<T: Clone> Sink for UnboundedSender<T> {
         Ok(AsyncSink::Ready)
     }
 
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        let shared = match self.shared.upgrade() {
-            Some(shared) => shared,
-            None => return Ok(Async::Ready(())), // No Receiver is available.
-        };
-        let mut shared = shared.borrow_mut();
-        shared.sender_alive = false;
-        Ok(Async::Ready(()))
+    pub fn unbounded_send(&self, msg: T) -> Result<(), SendError<T>> {
+        self.do_send(msg).map(|_| ())
     }
 }
 

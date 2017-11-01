@@ -1,4 +1,4 @@
-extern crate futures_ext;
+extern crate ex_futures;
 extern crate futures;
 extern crate tokio_core;
 
@@ -6,7 +6,7 @@ use futures::{Future, Stream};
 use futures::stream::unfold;
 use futures::future::ok;
 
-use futures_ext::StreamExt;
+use ex_futures::StreamExt;
 
 
 

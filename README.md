@@ -3,11 +3,11 @@ futures_ext
 
 ![MIT licensed](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Apache-2.0 licensed](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-[![Crates.io](https://img.shields.io/crates/v/futures_ext.svg)](https://crates.io/crates/futures_ext)
+[![Crates.io](https://img.shields.io/crates/v/ex-futures.svg)](https://crates.io/crates/ex-futures)
 
 An extension of `futures`.
 
-[Document](https://docs.rs/futures_ext)
+[Document](https://docs.rs/ex-futures)
 
 For now, this crate provides
 - unsync unbounded publish subscribe channel
@@ -30,7 +30,7 @@ An usage is almost same with `futures::unsync::mpsc::unbounded`.
 
 
 ```rust
-use futures_ext::unsync::pubsub::unbounded;
+use ex_futures::unsync::pubsub::unbounded;
 
 fn main() {
     let (tx, rx) = unbounded::<usize>();
@@ -49,7 +49,7 @@ fn main() {
 ### Cloneable stream
 
 ```rust
-use futures_ext::StreamExt;
+use ex_futures::StreamExt;
 
 fn main() {
     let stream = gen_inc_stream();;

@@ -1,17 +1,12 @@
-extern crate future_pubsub;
+extern crate futures_ext;
 extern crate futures;
 extern crate tokio_core;
 
-use future_pubsub::unsync::into_cloneable;
-
-use futures::{Future, Stream, Sink};
+use futures::{Future, Stream};
 use futures::stream::unfold;
 use futures::future::ok;
 
-use tokio_core::reactor::Core;
-
-use std::ops::Deref;
-
+use futures_ext::StreamExt;
 
 
 
@@ -19,7 +14,7 @@ use std::ops::Deref;
 fn clone() {
     let stream = unfold(0, |i| Some(ok::<(usize, usize), u8>((i, i + 1)))).take(4);
 
-    let cloneable = into_cloneable(stream);
+    let cloneable = StreamExt::unsync_cloneable(stream);
     let cloneable2 = cloneable.clone();
 
     assert_eq!(cloneable.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);

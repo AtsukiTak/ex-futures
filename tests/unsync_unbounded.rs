@@ -1,8 +1,8 @@
-extern crate future_pubsub;
+extern crate futures_ext;
 extern crate futures;
 extern crate tokio_core;
 
-use future_pubsub::unsync::unbounded;
+use futures_ext::unsync::pubsub::unbounded;
 
 use futures::{Future, Stream, Sink};
 use futures::stream::unfold;

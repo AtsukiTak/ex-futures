@@ -6,9 +6,9 @@ use std::collections::{HashMap, VecDeque};
 use std::cell::RefCell;
 
 
-/// Convert given stream into `Cloneable`.
-/// `Cloneable` is able to be cloned.
-pub fn into_cloneable<S: Stream>(stream: S) -> Cloneable<S> {
+/// Convert given stream into `UnsyncCloneable`.
+/// `UnsyncCloneable` is able to be cloned.
+pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S> {
     const FIRST_RECEIVER_ID: usize = 0;
 
     let mut receive_queues = HashMap::new();
@@ -20,7 +20,7 @@ pub fn into_cloneable<S: Stream>(stream: S) -> Cloneable<S> {
         blocking_receivers: Vec::new(),
     };
 
-    Cloneable {
+    UnsyncCloneable {
         id: FIRST_RECEIVER_ID,
         shared: Rc::new(RefCell::new(shared)),
     }
@@ -37,7 +37,7 @@ struct Shared<S: Stream> {
 /// A cloneable stream being created by `into_cloneable` function.
 /// You can `clone` this stream as you want.
 /// Each cloned stream is also cloneable.
-pub struct Cloneable<S: Stream> {
+pub struct UnsyncCloneable<S: Stream> {
     id: ReceiverId,
     shared: Rc<RefCell<Shared<S>>>,
 }
@@ -49,7 +49,7 @@ type ReceiverId = usize;
 
 
 
-impl<S: Stream> Stream for Cloneable<S> {
+impl<S: Stream> Stream for UnsyncCloneable<S> {
     type Item = Rc<S::Item>;
     type Error = Rc<S::Error>;
 
@@ -93,11 +93,11 @@ impl<S: Stream> Stream for Cloneable<S> {
 
 
 
-impl<S: Stream> Clone for Cloneable<S> {
+impl<S: Stream> Clone for UnsyncCloneable<S> {
     fn clone(&self) -> Self {
         let id = find_id(next_id(self.id), &self.shared.borrow().receive_queues);
 
-        let cloned = Cloneable {
+        let cloned = UnsyncCloneable {
             id: id,
             shared: self.shared.clone(),
         };
@@ -110,7 +110,7 @@ impl<S: Stream> Clone for Cloneable<S> {
 }
 
 
-impl<S: Stream> Drop for Cloneable<S> {
+impl<S: Stream> Drop for UnsyncCloneable<S> {
     fn drop(&mut self) {
         let mut shared = self.shared.borrow_mut();
         shared.receive_queues.remove(&self.id);
@@ -118,9 +118,9 @@ impl<S: Stream> Drop for Cloneable<S> {
 }
 
 
-impl<S: Stream> ::std::fmt::Debug for Cloneable<S> {
+impl<S: Stream> ::std::fmt::Debug for UnsyncCloneable<S> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
-        write!(f, "Cloneable({})", self.id)
+        write!(f, "UnsyncCloneable({})", self.id)
     }
 }
 

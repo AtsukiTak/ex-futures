@@ -3,8 +3,6 @@ use futures::stream::Stream;
 use futures::sink::Sink;
 use futures::{Async, Poll, AsyncSink, StartSend};
 
-use rand::{Rng, OsRng};
-
 use std::collections::{VecDeque, HashMap};
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
@@ -173,16 +171,7 @@ impl<T> Drop for UnboundedSender<T> {
 
 impl<T> Clone for UnboundedReceiver<T> {
     fn clone(&self) -> Self {
-        let id: usize = {
-            let mut rng = OsRng::new().unwrap();
-            loop {
-                let id = rng.gen();
-                match self.shared.borrow().receive_queues.get(&id) {
-                    Some(_) => continue,
-                    None => break id,
-                }
-            }
-        };
+        let id = find_id(next_id(self.id), &self.shared.borrow().receive_queues);
 
         let receiver = UnboundedReceiver {
             id: id,
@@ -191,6 +180,29 @@ impl<T> Clone for UnboundedReceiver<T> {
         let mut shared = self.shared.borrow_mut();
         shared.receive_queues.insert(id, VecDeque::new());
         receiver
+    }
+}
+
+
+
+fn find_id<V>(start: ReceiverId, receivers: &HashMap<ReceiverId, V>) -> ReceiverId {
+    let mut id = start;
+    loop {
+        match receivers.get(&id) {
+            Some(_) => {
+                id = next_id(id);
+                continue;
+            }
+            None => break id,
+        }
+    }
+}
+
+
+fn next_id(id: ReceiverId) -> ReceiverId {
+    match id.checked_add(1) {
+        Some(id) => id,
+        None => ReceiverId::min_value(),
     }
 }
 

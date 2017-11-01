@@ -3,9 +3,11 @@ future_pubsub
 
 ![MIT licensed](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Apache-2.0 licensed](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-[![Crates.io](https://img.shields.io/crates/v/tungstenite.svg?maxAge=2592000)](https://crates.io/crates/future_pubsub)
+[![Crates.io](https://img.shields.io/crates/v/future_pubsub.svg)](https://crates.io/crates/future_pubsub)
 
 A tokio future based publish-subscribe channel.
+
+[Document](https://docs.rs/future_pubsub)
 
 For now, this crate provides
 - unsync unbounded publish subscribe channel

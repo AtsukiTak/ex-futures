@@ -6,7 +6,7 @@ license = "MIT/Apache-2.0"
 description = "A tokio based publish-subscibe channel"
 repository = "https://github.com/AtsukiTak/future-pubsub"
 keywords = ["pubsub", "channel", "spmc"]
-categories = ["Asynchronous"]
+categories = ["asynchronous"]
 
 [dependencies]
 futures = "0.1"

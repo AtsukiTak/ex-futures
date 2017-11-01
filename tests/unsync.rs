@@ -59,10 +59,12 @@ fn send_many_items_recv_shared() {
 
     let (tx, rx) = unbounded::<usize>();
     let rx2 = rx.clone();
+    let rx3 = rx.clone();
 
     let future = tx.send_all(stream).map(|_| ()).map_err(|_| ());
     core.handle().spawn(future);
 
     assert_eq!(core.run(rx.collect()).unwrap(), [0, 1, 2, 3]);
     assert_eq!(core.run(rx2.collect()).unwrap(), [0, 1, 2, 3]);
+    assert_eq!(core.run(rx3.collect()).unwrap(), [0, 1, 2, 3]);
 }

@@ -10,10 +10,12 @@ use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 
 
-const FIRST_RECEIVER_ID: usize = 0;
+
 
 
 pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
+    const FIRST_RECEIVER_ID: usize = 0;
+
     let mut receive_queues = HashMap::new();
     receive_queues.insert(FIRST_RECEIVER_ID, VecDeque::new());
 
@@ -28,6 +30,7 @@ pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
         id: FIRST_RECEIVER_ID,
         shared: shared,
     };
+
     (sender, receiver)
 }
 
@@ -84,6 +87,17 @@ impl<T: Clone> Sink for UnboundedSender<T> {
 
 
     fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
+        Ok(Async::Ready(()))
+    }
+
+
+    fn close(&mut self) -> Poll<(), SendError<T>> {
+        let shared = match self.shared.upgrade() {
+            Some(shared) => shared,
+            None => return Ok(Async::Ready(())), // No Receiver is available.
+        };
+        let mut shared = shared.borrow_mut();
+        shared.sender_alive = false;
         Ok(Async::Ready(()))
     }
 }

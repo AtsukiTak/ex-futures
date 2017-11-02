@@ -1,5 +1,4 @@
 use futures::{Stream, Poll, Async};
-use futures::task::{self, Task};
 
 use std::rc::Rc;
 use std::collections::{HashMap, VecDeque};
@@ -17,7 +16,6 @@ pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S> {
     let shared = Shared {
         stream: stream,
         receive_queues: receive_queues,
-        blocking_receivers: Vec::new(),
     };
 
     UnsyncCloneable {
@@ -30,7 +28,6 @@ pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S> {
 struct Shared<S: Stream> {
     stream: S,
     receive_queues: HashMap<ReceiverId, VecDeque<Msg<S::Item, S::Error>>>,
-    blocking_receivers: Vec<Task>,
 }
 
 
@@ -71,19 +68,12 @@ impl<S: Stream> Stream for UnsyncCloneable<S> {
                 Ok(Async::Ready(Some(msg))) => Ok(Some(Rc::new(msg))),
                 Ok(Async::Ready(None)) => Ok(None),
                 Ok(Async::NotReady) => {
-                    shared.blocking_receivers.push(task::current());
                     return Ok(Async::NotReady);
                 }
             };
 
             for rx in shared.receive_queues.values_mut() {
                 rx.push_back(msg.clone());
-            }
-
-            let blocking = ::std::mem::replace(&mut shared.blocking_receivers, Vec::new());
-            drop(shared);
-            for task in blocking.iter() {
-                task.notify();
             }
         }
 

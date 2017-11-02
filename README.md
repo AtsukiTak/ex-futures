@@ -11,16 +11,16 @@ An extension of `futures`.
 
 For now, this crate provides
 - unsync unbounded publish subscribe channel
-- unsync unbounded cloneable stream
+- unsync unbounded cloneable stream/sink
 
 
 And will provide in future
 - unsync bounded publish subscribe channel
 - sync unbounded publish subscribe channel
 - sync bounded publish subscribe channel
-- unsync bounded cloneable stream
-- sync unbounded cloneable stream
-- sync bounded cloneable stream
+- unsync bounded cloneable stream/sink
+- sync unbounded cloneable stream/sink
+- sync bounded cloneable stream/sink
 
 
 
@@ -46,7 +46,7 @@ fn main() {
 ```
 
 
-### Cloneable stream
+### Cloneable stream/sink
 
 ```rust
 use ex_futures::StreamExt;

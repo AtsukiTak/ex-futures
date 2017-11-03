@@ -11,9 +11,11 @@ use futures::Stream;
 
 pub trait StreamExt: Stream {
     /// Convert stream into "cloneable" stream but unsync.
+    /// If your stream emits non `Clone` item, consider wrap it by `Rc`.
     fn unsync_cloneable(self) -> UnsyncCloneable<Self>
     where
         Self: Sized,
+        Self::Item: Clone,
     {
         self::unsync_cloneable::unsync_cloneable(self)
     }

@@ -20,11 +20,11 @@ fn clone() {
     let cloneable2 = cloneable.clone();
 
     assert_eq!(
-        cloneable.map(|i| *i).collect().wait().unwrap(),
+        cloneable.collect().wait().unwrap(),
         [0, 1, 2, 3]
     );
     assert_eq!(
-        cloneable2.map(|i| *i).collect().wait().unwrap(),
+        cloneable2.collect().wait().unwrap(),
         [0, 1, 2, 3]
     );
 }
@@ -44,11 +44,11 @@ fn interval() {
     let cloneable2 = cloneable.clone();
 
     assert_eq!(
-        core.run(cloneable.map(|i| *i).collect()).unwrap(),
+        core.run(cloneable.collect()).unwrap(),
         [0, 1, 2, 3]
     );
     assert_eq!(
-        core.run(cloneable2.map(|i| *i).collect()).unwrap(),
+        core.run(cloneable2.collect()).unwrap(),
         [0, 1, 2, 3]
     );
 }
@@ -67,8 +67,8 @@ fn zip() {
     let cloneable = rx.unsync_cloneable();
     let cloneable2 = cloneable.clone();;
 
-    let fut1 = cloneable.map(|i| *i).collect();
-    let fut2 = cloneable2.map(|i| *i).collect();
+    let fut1 = cloneable.collect();
+    let fut2 = cloneable2.collect();
     let joined = fut1.join(fut2);
 
     let (res1, res2) = core.run(joined).unwrap();

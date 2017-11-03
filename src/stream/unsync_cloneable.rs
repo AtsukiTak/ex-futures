@@ -7,7 +7,10 @@ use std::cell::RefCell;
 
 /// Convert given stream into `UnsyncCloneable`.
 /// `UnsyncCloneable` is able to be cloned.
-pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S> {
+pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S>
+where
+    S::Item: Clone,
+{
     const FIRST_RECEIVER_ID: usize = 0;
 
     let mut receive_queues = HashMap::new();
@@ -34,23 +37,30 @@ struct Shared<S: Stream> {
 /// A cloneable stream being created by `into_cloneable` function.
 /// You can `clone` this stream as you want.
 /// Each cloned stream is also cloneable.
+///
+/// # Notice
+/// A type of `Item` and `Error` are wrapped by `Rc`
 pub struct UnsyncCloneable<S: Stream> {
     id: ReceiverId,
     shared: Rc<RefCell<Shared<S>>>,
 }
 
 
-type Msg<T, E> = Result<Option<Rc<T>>, Rc<E>>;
+type Msg<T, E> = Result<Option<T>, Rc<E>>;
 
 type ReceiverId = usize;
 
 
 
-impl<S: Stream> Stream for UnsyncCloneable<S> {
-    type Item = Rc<S::Item>;
+impl<S> Stream for UnsyncCloneable<S>
+where
+    S: Stream,
+    S::Item: Clone,
+{
+    type Item = S::Item;
     type Error = Rc<S::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Rc<S::Item>>, Rc<S::Error>> {
+    fn poll(&mut self) -> Poll<Option<S::Item>, Rc<S::Error>> {
         {
             let mut shared = self.shared.borrow_mut();
 
@@ -65,7 +75,7 @@ impl<S: Stream> Stream for UnsyncCloneable<S> {
 
             let msg = match poll {
                 Err(e) => Err(Rc::new(e)),
-                Ok(Async::Ready(Some(msg))) => Ok(Some(Rc::new(msg))),
+                Ok(Async::Ready(Some(msg))) => Ok(Some(msg.clone())),
                 Ok(Async::Ready(None)) => Ok(None),
                 Ok(Async::NotReady) => {
                     return Ok(Async::NotReady);

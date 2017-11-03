@@ -8,8 +8,6 @@ use std::cell::RefCell;
 /// Convert given stream into `UnsyncCloneable`.
 /// `UnsyncCloneable` is able to be cloned.
 pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S>
-where
-    S::Item: Clone,
 {
     const FIRST_RECEIVER_ID: usize = 0;
 
@@ -46,7 +44,7 @@ pub struct UnsyncCloneable<S: Stream> {
 }
 
 
-type Msg<T, E> = Result<Option<T>, Rc<E>>;
+type Msg<T, E> = Result<Option<T>, E>;
 
 type ReceiverId = usize;
 
@@ -56,11 +54,12 @@ impl<S> Stream for UnsyncCloneable<S>
 where
     S: Stream,
     S::Item: Clone,
+    S::Error: Clone,
 {
     type Item = S::Item;
-    type Error = Rc<S::Error>;
+    type Error = S::Error;
 
-    fn poll(&mut self) -> Poll<Option<S::Item>, Rc<S::Error>> {
+    fn poll(&mut self) -> Poll<Option<S::Item>, S::Error> {
         {
             let mut shared = self.shared.borrow_mut();
 
@@ -74,7 +73,7 @@ where
             };
 
             let msg = match poll {
-                Err(e) => Err(Rc::new(e)),
+                Err(e) => Err(e.clone()),
                 Ok(Async::Ready(Some(msg))) => Ok(Some(msg.clone())),
                 Ok(Async::Ready(None)) => Ok(None),
                 Ok(Async::NotReady) => {

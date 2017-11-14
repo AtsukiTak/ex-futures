@@ -7,8 +7,7 @@ use std::cell::RefCell;
 
 /// Convert given stream into `UnsyncCloneable`.
 /// `UnsyncCloneable` is able to be cloned.
-pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S>
-{
+pub fn unsync_cloneable<S: Stream>(stream: S) -> UnsyncCloneable<S> {
     const FIRST_RECEIVER_ID: usize = 0;
 
     let mut receive_queues = HashMap::new();

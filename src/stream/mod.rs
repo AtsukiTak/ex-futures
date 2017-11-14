@@ -7,7 +7,14 @@ pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
 
 use futures::Stream;
+use futures::stream::Then;
 
+
+pub type AsErr<S: Stream, E> = Then<
+    S,
+    fn(Result<S::Item, ()>) -> Result<S::Item, E>,
+    Result<S::Item, E>,
+>;
 
 pub trait StreamExt: Stream {
     /// Convert stream into "cloneable" stream but unsync.
@@ -19,6 +26,15 @@ pub trait StreamExt: Stream {
         Self::Error: Clone,
     {
         self::unsync_cloneable::unsync_cloneable(self)
+    }
+
+
+    fn as_err<E>(self) -> AsErr<Self, E>
+    where
+        Self: Sized,
+        Self: Stream<Error = ()>,
+    {
+        self.then(|never_err| Ok::<_, E>(never_err.unwrap()))
     }
 
 

@@ -10,18 +10,9 @@ An extension of `futures`.
 [Document](https://docs.rs/ex-futures)
 
 For now, this crate provides
-- unsync unbounded publish subscribe channel
-- unsync unbounded cloneable stream/sink
-
-
-And will provide in future
-- unsync bounded publish subscribe channel
-- sync unbounded publish subscribe channel
-- sync bounded publish subscribe channel
-- unsync bounded cloneable stream/sink
-- sync unbounded cloneable stream/sink
-- sync bounded cloneable stream/sink
-
+- publish subscribe channel
+- cloneable stream/sink
+- stream fork
 
 
 ## How to use
@@ -57,6 +48,22 @@ fn main() {
     let cloneable = stream.unsync_cloneable();
     let cloneable2 = cloneable.clone();
 
-    assert_eq!(cloneable.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);
-    assert_eq!(cloneable2.map(|i| *i).collect().wait().unwrap(), [0, 1, 2, 3]);
+    assert_eq!(cloneable.collect().wait().unwrap(), [0, 1, 2, 3]);
+    assert_eq!(cloneable2.collect().wait().unwrap(), [0, 1, 2, 3]);
 }
+```
+
+
+### Forked stream
+
+```rust
+use ex_futures::StreamExt;
+
+fn main() {
+    let (even, odd) = int_stream.fork(|i| i % 2 == 0);
+
+    assert_eq!(even.collect().wait().unwrap(), [0, 2]);
+    assert_eq!(odd.collect().wait().unwrap(), [1, 3]);
+}
+```
+

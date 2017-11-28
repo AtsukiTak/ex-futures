@@ -1,11 +1,12 @@
 mod unsync_cloneable;
 mod find_first_map;
 mod find_first;
+mod fork;
 
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
-pub use unsync::fork::{LeftFork, RightFork, Fork, Side};
+pub use self::fork::{fork, LeftFork, RightFork, Fork, Side};
 
 use futures::Stream;
 use futures::stream::Then;
@@ -31,15 +32,20 @@ pub trait StreamExt: Stream {
 
 
     /// Convenient method which is same with `unsync::fork::fork`.
-    fn unsync_fork<F>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
+    ///
+    /// You may return `bool` as result of `router`. In that case an item which is stamped
+    /// as `true` is queued in `LeftFork` and vice versa.
+    fn unsync_fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
     where
         Self: Sized,
-        F: Fn(&Self::Item) -> Side,
+        F: Fn(&Self::Item) -> T,
+        T: Into<Side>,
     {
-        ::unsync::fork::fork(self, router)
+        self::fork::fork(self, router)
     }
 
 
+    /// This function is useful when stream is created by `channel` function.
     fn as_err<E>(self) -> AsErr<Self, E>
     where
         Self: Sized,
@@ -49,6 +55,7 @@ pub trait StreamExt: Stream {
     }
 
 
+    /// Return `Future` which will be completed when find first item you want.
     fn find_first<F>(self, f: F) -> FindFirst<Self, F>
     where
         F: FnMut(&Self::Item) -> bool,

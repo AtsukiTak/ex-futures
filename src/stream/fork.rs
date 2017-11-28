@@ -9,10 +9,15 @@ pub type LeftFork<S, F> = Fork<S, F>;
 pub type RightFork<S, F> = Fork<S, F>;
 
 
-pub fn fork<S, F>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
+/// Fork given stream in accordance with a given closure.
+/// A closure may return `bool`. In that case an item which is stamped as `true` is in `LeftFork`
+/// and vice versa.
+/// Or you can simply return `Side` enum.
+pub fn fork<S, F, T>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
 where
     S: Stream,
-    F: Fn(&S::Item) -> Side,
+    F: Fn(&S::Item) -> T,
+    T: Into<Side>
 {
     let shared = Shared {
         router: router,
@@ -40,6 +45,12 @@ where
 pub enum Side {
     Left,
     Right,
+}
+
+impl From<bool> for Side {
+    fn from(b: bool) -> Side {
+        if b { Side::Left } else { Side::Right }
+    }
 }
 
 
@@ -94,11 +105,12 @@ pub struct Fork<S: Stream, F> {
 }
 
 
-impl<S, F> Stream for Fork<S, F>
+impl<S, F, T> Stream for Fork<S, F>
 where
     S: Stream,
     S::Error: Clone,
-    F: Fn(&S::Item) -> Side,
+    F: Fn(&S::Item) -> T,
+    T: Into<Side>,
 {
     type Item = S::Item;
     type Error = S::Error;
@@ -119,7 +131,7 @@ where
             match poll {
                 Err(e) => shared.queues.push_err(e),
                 Ok(Async::Ready(Some(msg))) => {
-                    let route = (shared.router)(&msg);
+                    let route = (shared.router)(&msg).into();
                     shared.queues.get_queue_mut(route).push_back(Ok(Some(msg)));
                 }
                 Ok(Async::Ready(None)) => shared.queues.push_none(),

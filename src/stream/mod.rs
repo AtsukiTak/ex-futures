@@ -5,6 +5,7 @@ mod find_first;
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
+pub use unsync::fork::{LeftFork, RightFork, Fork, Side};
 
 use futures::Stream;
 use futures::stream::Then;
@@ -26,6 +27,16 @@ pub trait StreamExt: Stream {
         Self::Error: Clone,
     {
         self::unsync_cloneable::unsync_cloneable(self)
+    }
+
+
+    /// Convenient method which is same with `unsync::fork::fork`.
+    fn unsync_fork<F>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
+    where
+        Self: Sized,
+        F: Fn(&Self::Item) -> Side,
+    {
+        ::unsync::fork::fork(self, router)
     }
 
 

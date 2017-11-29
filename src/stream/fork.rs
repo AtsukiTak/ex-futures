@@ -16,7 +16,7 @@ pub type RightFork<S, F> = Fork<S, F>;
 pub fn fork<S, F, T>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
 where
     S: Stream,
-    F: Fn(&S::Item) -> T,
+    F: FnMut(&S::Item) -> T,
     T: Into<Side>
 {
     let shared = Shared {

@@ -38,6 +38,7 @@ pub trait StreamExt: Stream {
     fn unsync_fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
     where
         Self: Sized,
+        Self::Error: Clone,
         F: FnMut(&Self::Item) -> T,
         T: Into<Side>,
     {

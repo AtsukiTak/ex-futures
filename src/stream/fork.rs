@@ -109,7 +109,7 @@ impl<S, F, T> Stream for Fork<S, F>
 where
     S: Stream,
     S::Error: Clone,
-    F: Fn(&S::Item) -> T,
+    F: FnMut(&S::Item) -> T,
     T: Into<Side>,
 {
     type Item = S::Item;
@@ -131,7 +131,7 @@ where
             match poll {
                 Err(e) => shared.queues.push_err(e),
                 Ok(Async::Ready(Some(msg))) => {
-                    let route = (shared.router)(&msg).into();
+                    let route = (&mut shared.router)(&msg).into();
                     shared.queues.get_queue_mut(route).push_back(Ok(Some(msg)));
                 }
                 Ok(Async::Ready(None)) => shared.queues.push_none(),

@@ -2,7 +2,7 @@ futures_ext
 ===
 
 > I really want your contribution especially English staff.
-> As you see, my English skill is not good. Please help me.
+> As you see, my English skill is not good. Please help me to improve documentation.
 
 ![MIT licensed](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Apache-2.0 licensed](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
@@ -13,10 +13,11 @@ An extension of `futures`.
 [Document](https://docs.rs/ex-futures)
 
 
-For now, this crate provides
-- publish subscribe channel (will be removed future)
-- cloneable stream/sink
-- stream fork
+For now, this crate enables you to
+- create publish subscribe channel (will be removed future)
+- convert any kind of stream/sink into "cloneable"
+- fork any kind of stream
+- convert `Error` associated type which is `()`
 
 
 ## How to use

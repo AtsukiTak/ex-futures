@@ -1,12 +1,12 @@
 mod unsync_cloneable;
+mod unsync_fork;
 mod find_first_map;
 mod find_first;
-mod fork;
 
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
-pub use self::fork::{fork, LeftFork, RightFork, Fork, Side};
+pub use self::unsync_fork::{fork, LeftFork, RightFork, Fork, Side};
 
 use futures::Stream;
 use futures::stream::Then;
@@ -18,9 +18,31 @@ pub type AsErr<S: Stream, E> = Then<
     Result<S::Item, E>,
 >;
 
+/// An extention of `Stream` provided by `futures` crate.
+/// Any stream implements `StreamExt` automatically.
+/// What you only to do is to import `StreamExt` (I mean do `use ex_futures::StreamExt`).
 pub trait StreamExt: Stream {
-    /// Convert stream into "cloneable" stream but unsync.
+    /// Convert any kind of stream into "cloneable" stream but unsync.
     /// If your stream emits non `Clone` item or error, consider wrap it by `Rc`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+    ///
+    /// let cloneable_rx = rx.unsync_cloneable(); // Convert "rx" into cloneable.
+    /// let cloneable_rx2 = cloneable_rx.clone(); // Now you can clone it.
+    /// # }
+    /// ```
+    ///
+    /// # Notice
+    ///
+    /// The value being returned by this function is not `Sync`. We will provide `Sync` version later.
     fn unsync_cloneable(self) -> UnsyncCloneable<Self>
     where
         Self: Sized,
@@ -31,10 +53,29 @@ pub trait StreamExt: Stream {
     }
 
 
-    /// Convenient method which is same with `unsync::fork::fork`.
+    /// Fork any kind of stream into two stream like that the river branches.
+    /// The closure being passed this function is called "router". Each item of original stream is
+    /// passed to branch following to "router" decision.
+    /// "Router" can return not only `Side` which is `Left` or `Right` but also
+    /// `bool` (`true` is considered as `Left`).
     ///
-    /// You may return `bool` as result of `router`. In that case an item which is stamped
-    /// as `true` is queued in `LeftFork` and vice versa.
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+    ///
+    /// let (even, odd) = rx.unsync_fork(|i| i % 2 == 0);
+    /// # }
+    /// ```
+    ///
+    /// # Notice
+    ///
+    /// The value being returned by this function is not `Sync`. We will provide `Sync` version later.
     fn unsync_fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
     where
         Self: Sized,
@@ -42,11 +83,27 @@ pub trait StreamExt: Stream {
         F: FnMut(&Self::Item) -> T,
         T: Into<Side>,
     {
-        self::fork::fork(self, router)
+        self::unsync_fork::fork(self, router)
     }
 
 
-    /// This function is useful when stream is created by `channel` function.
+    /// Converts `Error` association type which is () into any kind of type you want.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+    ///
+    /// struct MyError();
+    ///
+    /// let rx = rx.as_err::<MyError>(); // Accomplished by this function.
+    /// # }
+    /// ```
     fn as_err<E>(self) -> AsErr<Self, E>
     where
         Self: Sized,
@@ -56,7 +113,25 @@ pub trait StreamExt: Stream {
     }
 
 
-    /// Return `Future` which will be completed when find first item you want.
+    /// Returns `Future` which will be completed when find first item you want.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    /// use futures::{Sink, Future};
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::unsync::mpsc::channel::<usize>(42);
+    ///
+    /// tx.send(42).wait();
+    ///
+    /// let fut = rx.find_first(|i| *i == 42);
+    /// let (the_Answer_to_the_Ultimate_Question_of_Life_the_Universe_and_Everything, rx) = fut.wait().unwrap();
+    /// # }
+    /// ```
     fn find_first<F>(self, f: F) -> FindFirst<Self, F>
     where
         F: FnMut(&Self::Item) -> bool,
@@ -66,7 +141,26 @@ pub trait StreamExt: Stream {
     }
 
 
-    /// Return `Future` which will be completed when find first item you want.
+    /// Similar function to `StreamExt::find_first`. The only deference is that this function "maps"
+    /// the result.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    /// use futures::{Sink, Future};
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::unsync::mpsc::channel::<usize>(42);
+    ///
+    /// tx.send(0).wait();
+    ///
+    /// let first_odd_half_fut = rx.find_first_map(|i| if i % 2 == 0 { Some(i / 2) } else { None });
+    /// let (first_odd_half, continue_rx) = first_odd_half_fut.wait().unwrap();
+    /// # }
+    /// ```
     fn find_first_map<F, B>(self, f: F) -> FindFirstMap<Self, F>
     where
         F: FnMut(Self::Item) -> Option<B>,

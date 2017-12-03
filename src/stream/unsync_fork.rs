@@ -5,12 +5,12 @@ use std::collections::VecDeque;
 use std::cell::RefCell;
 
 
-pub type LeftFork<S, F> = Fork<S, F>;
-pub type RightFork<S, F> = Fork<S, F>;
+pub type LeftFork<S, F> = UnsyncFork<S, F>;
+pub type RightFork<S, F> = UnsyncFork<S, F>;
 
 
 
-/// Fork given stream into two stream. Please have a look at document of `StreamExt` trait.
+/// UnsyncFork given stream into two stream. Please have a look at document of `StreamExt` trait.
 pub fn fork<S, F, T>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
 where
     S: Stream,
@@ -25,12 +25,12 @@ where
 
     let shared = Rc::new(RefCell::new(shared));
 
-    let left = Fork {
+    let left = UnsyncFork {
         route: Side::Left,
         shared: shared.clone(),
     };
 
-    let right = Fork {
+    let right = UnsyncFork {
         route: Side::Right,
         shared: shared,
     };
@@ -98,7 +98,7 @@ struct Shared<S: Stream, F> {
 
 
 
-/// Fork any kind of stream into two stream like that the river branches.
+/// UnsyncFork any kind of stream into two stream like that the river branches.
 /// The closure being passed this function is called "router". Each item of original stream is
 /// passed to branch following to "router" decision.
 /// "Router" can return not only `Side` which is `Left` or `Right` but also
@@ -121,13 +121,13 @@ struct Shared<S: Stream, F> {
 /// # Notice
 ///
 /// The value being returned by this function is not `Sync`. We will provide `Sync` version later.
-pub struct Fork<S: Stream, F> {
+pub struct UnsyncFork<S: Stream, F> {
     route: Side,
     shared: Rc<RefCell<Shared<S, F>>>,
 }
 
 
-impl<S, F, T> Stream for Fork<S, F>
+impl<S, F, T> Stream for UnsyncFork<S, F>
 where
     S: Stream,
     S::Error: Clone,
@@ -169,7 +169,7 @@ where
 
 
 
-impl<S: Stream, F> ::std::fmt::Debug for Fork<S, F> {
+impl<S: Stream, F> ::std::fmt::Debug for UnsyncFork<S, F> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
         match self.route {
             Side::Left => write!(f, "LeftRoute"),

@@ -8,7 +8,7 @@ pub use self::cloneable::Cloneable;
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
-pub use self::unsync_fork::{fork, LeftFork, RightFork, Fork, Side};
+pub use self::unsync_fork::{fork, LeftFork, RightFork, UnsyncFork, Side};
 
 use futures::Stream;
 use futures::stream::Then;

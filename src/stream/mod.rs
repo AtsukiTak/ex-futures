@@ -95,7 +95,25 @@ pub trait StreamExt: Stream {
         self::unsync_cloneable::unsync_cloneable(self)
     }
 
-
+    /// Fork any kind of stream into two stream like that the river branches.
+    /// The closure being passed this function is called "router". Each item of original stream is
+    /// passed to branch following to "router" decision.
+    /// "Router" can return not only `Side` which is `Left` or `Right` but also
+    /// `bool` (`true` is considered as `Left`).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+    ///
+    /// let (even, odd) = rx.fork(|i| i % 2 == 0);
+    /// # }
+    /// ```
     fn fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
     where
         Self: Sized,
@@ -107,7 +125,7 @@ pub trait StreamExt: Stream {
     }
 
 
-    /// Fork any kind of stream into two stream like that the river branches.
+    /// Fork any kind of stream into two "unsync" stream.
     /// The closure being passed this function is called "router". Each item of original stream is
     /// passed to branch following to "router" decision.
     /// "Router" can return not only `Side` which is `Left` or `Right` but also

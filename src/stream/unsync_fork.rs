@@ -9,10 +9,8 @@ pub type LeftFork<S, F> = Fork<S, F>;
 pub type RightFork<S, F> = Fork<S, F>;
 
 
-/// Fork given stream in accordance with a given closure.
-/// A closure may return `bool`. In that case an item which is stamped as `true` is in `LeftFork`
-/// and vice versa.
-/// Or you can simply return `Side` enum.
+
+/// Fork given stream into two stream. Please have a look at document of `StreamExt` trait.
 pub fn fork<S, F, T>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
 where
     S: Stream,
@@ -99,6 +97,30 @@ struct Shared<S: Stream, F> {
 }
 
 
+
+/// Fork any kind of stream into two stream like that the river branches.
+/// The closure being passed this function is called "router". Each item of original stream is
+/// passed to branch following to "router" decision.
+/// "Router" can return not only `Side` which is `Left` or `Right` but also
+/// `bool` (`true` is considered as `Left`).
+///
+/// # Examples
+///
+/// ```
+/// # extern crate futures;
+/// # extern crate ex_futures;
+/// use ex_futures::StreamExt;
+///
+/// # fn main() {
+/// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+///
+/// let (even, odd) = rx.unsync_fork(|i| i % 2 == 0);
+/// # }
+/// ```
+///
+/// # Notice
+///
+/// The value being returned by this function is not `Sync`. We will provide `Sync` version later.
 pub struct Fork<S: Stream, F> {
     route: Side,
     shared: Rc<RefCell<Shared<S, F>>>,

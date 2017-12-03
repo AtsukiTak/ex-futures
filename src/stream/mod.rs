@@ -1,4 +1,5 @@
 mod unsync_cloneable;
+mod fork;
 mod unsync_fork;
 mod cloneable;
 mod find_first_map;
@@ -8,7 +9,8 @@ pub use self::cloneable::Cloneable;
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
-pub use self::unsync_fork::{fork, LeftFork, RightFork, UnsyncFork, Side};
+pub use self::fork::{fork, LeftFork, RightFork, Fork, Side};
+pub use self::unsync_fork::{unsync_fork, LeftUnsyncFork, RightUnsyncFork, UnsyncFork};
 
 use futures::Stream;
 use futures::stream::Then;
@@ -94,6 +96,17 @@ pub trait StreamExt: Stream {
     }
 
 
+    fn fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
+    where
+        Self: Sized,
+        Self::Error: Clone,
+        F: FnMut(&Self::Item) -> T,
+        Side: From<T>,
+    {
+        self::fork::fork(self, router)
+    }
+
+
     /// Fork any kind of stream into two stream like that the river branches.
     /// The closure being passed this function is called "router". Each item of original stream is
     /// passed to branch following to "router" decision.
@@ -117,14 +130,14 @@ pub trait StreamExt: Stream {
     /// # Notice
     ///
     /// The value being returned by this function is not `Sync`. We will provide `Sync` version later.
-    fn unsync_fork<F, T>(self, router: F) -> (LeftFork<Self, F>, RightFork<Self, F>)
+    fn unsync_fork<F, T>(self, router: F) -> (LeftUnsyncFork<Self, F>, RightUnsyncFork<Self, F>)
     where
         Self: Sized,
         Self::Error: Clone,
         F: FnMut(&Self::Item) -> T,
-        T: Into<Side>,
+        Side: From<T>,
     {
-        self::unsync_fork::fork(self, router)
+        self::unsync_fork::unsync_fork(self, router)
     }
 
 

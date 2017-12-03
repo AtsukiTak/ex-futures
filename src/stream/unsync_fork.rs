@@ -1,21 +1,23 @@
 use futures::{Stream, Poll, Async};
 
+use super::fork::Side;
+
 use std::rc::Rc;
 use std::collections::VecDeque;
 use std::cell::RefCell;
 
 
-pub type LeftFork<S, F> = UnsyncFork<S, F>;
-pub type RightFork<S, F> = UnsyncFork<S, F>;
+pub type LeftUnsyncFork<S, F> = UnsyncFork<S, F>;
+pub type RightUnsyncFork<S, F> = UnsyncFork<S, F>;
 
 
 
 /// UnsyncFork given stream into two stream. Please have a look at document of `StreamExt` trait.
-pub fn fork<S, F, T>(stream: S, router: F) -> (LeftFork<S, F>, RightFork<S, F>)
+pub fn unsync_fork<S, F, T>(stream: S, router: F) -> (LeftUnsyncFork<S, F>, RightUnsyncFork<S, F>)
 where
     S: Stream,
     F: FnMut(&S::Item) -> T,
-    T: Into<Side>,
+    Side: From<T>,
 {
     let shared = Shared {
         router: router,
@@ -38,18 +40,6 @@ where
     (left, right)
 }
 
-
-#[derive(Clone, Debug)]
-pub enum Side {
-    Left,
-    Right,
-}
-
-impl From<bool> for Side {
-    fn from(b: bool) -> Side {
-        if b { Side::Left } else { Side::Right }
-    }
-}
 
 
 #[derive(Debug)]

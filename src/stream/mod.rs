@@ -1,8 +1,10 @@
 mod unsync_cloneable;
 mod unsync_fork;
+mod cloneable;
 mod find_first_map;
 mod find_first;
 
+pub use self::cloneable::Cloneable;
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
@@ -19,11 +21,50 @@ pub type AsErr<S: Stream, E> = Then<
 >;
 
 /// An extention of `Stream` provided by `futures` crate.
-/// Any stream implements `StreamExt` automatically.
-/// What you only to do is to import `StreamExt` (I mean do `use ex_futures::StreamExt`).
+/// Any `Stream` implements `StreamExt` automatically.
+/// All you are needed to do is to import `StreamExt`
+///
+/// ```
+/// use ex_futures::StreamExt;
+/// ```
 pub trait StreamExt: Stream {
+    /// Convert any kind of stream into "cloneable" stream.
+    /// The `Item` and `Error` need to implement `Clone`. If not, consider wrap it by `Arc`.
+    ///
+    /// # Notice
+    ///
+    /// This feature is work. But does not have high performance.
+    /// If you need not to `Sync`, please use `unsync_cloneable` function. That is fast enough.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate futures;
+    /// # extern crate ex_futures;
+    /// use ex_futures::StreamExt;
+    ///
+    /// # fn main() {
+    /// let (tx, rx) = ::futures::sync::mpsc::channel::<usize>(42);
+    ///
+    /// let cloneable_rx = rx.cloneable(); // Convert "rx" into cloneable.
+    /// let cloneable_rx2 = cloneable_rx.clone(); // Now you can clone it.
+    /// # }
+    /// ```
+    fn cloneable(self) -> Cloneable<Self>
+    where
+        Self: Sized,
+        Self::Item: Clone,
+        Self::Error: Clone,
+    {
+        self::cloneable::cloneable(self)
+    }
+
+
     /// Convert any kind of stream into "cloneable" stream but unsync.
     /// If your stream emits non `Clone` item or error, consider wrap it by `Rc`.
+    ///
+    /// Each cloneable stream has its own queue. And each item of original stream is cloned
+    /// and queued to there.
     ///
     /// # Examples
     ///

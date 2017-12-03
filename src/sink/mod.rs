@@ -1,5 +1,7 @@
 mod unsync_cloneable;
+mod cloneable;
 
+pub use self::cloneable::Cloneable;
 pub use self::unsync_cloneable::UnsyncCloneable;
 
 
@@ -14,6 +16,12 @@ use futures::Sink;
 /// use ex_futures::SinkExt;
 /// ```
 pub trait SinkExt: Sink {
+    fn cloneable(self) -> Cloneable<Self>
+    where
+        Self: Sized,
+    {
+        self::cloneable::cloneable(self)
+    }
     /// Convert any kind of sink into "cloneable" sink but unsync.
     /// That is kind like mpsc.
     ///

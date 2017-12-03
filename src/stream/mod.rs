@@ -9,8 +9,8 @@ pub use self::cloneable::Cloneable;
 pub use self::unsync_cloneable::UnsyncCloneable;
 pub use self::find_first_map::FindFirstMap;
 pub use self::find_first::FindFirst;
-pub use self::fork::{fork, LeftFork, RightFork, Fork, Side};
-pub use self::unsync_fork::{unsync_fork, LeftUnsyncFork, RightUnsyncFork, UnsyncFork};
+pub use self::fork::{LeftFork, RightFork, Fork, Side};
+pub use self::unsync_fork::{LeftUnsyncFork, RightUnsyncFork, UnsyncFork};
 
 use futures::Stream;
 use futures::stream::Then;
@@ -24,7 +24,7 @@ pub type AsErr<S: Stream, E> = Then<
 
 /// An extention of `Stream` provided by `futures` crate.
 /// Any `Stream` implements `StreamExt` automatically.
-/// All you are needed to do is to import `StreamExt`
+/// All you is to import `StreamExt`.
 ///
 /// ```
 /// use ex_futures::StreamExt;
@@ -36,7 +36,7 @@ pub trait StreamExt: Stream {
     /// # Notice
     ///
     /// This feature is work. But does not have high performance.
-    /// If you need not to `Sync`, please use `unsync_cloneable` function. That is fast enough.
+    /// If you need not to use `Sync`, please use `unsync_cloneable` function. That is fast enough.
     ///
     /// # Examples
     ///
